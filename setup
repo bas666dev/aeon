@@ -4,3 +4,12 @@ git commit -m "Init LLM App"
 git branch -M main
 git remote add origin https://github.com/aeon.git
 git push -u origin main
+
+python3 -m venv aienv
+source aienv/bin/activate
+
+pip install -U phidata
+
+phi ws setup
+
+phi ws up --env dev --infra docker
