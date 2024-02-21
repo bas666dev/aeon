@@ -13,3 +13,8 @@ pip install -U phidata
 phi ws setup
 
 phi ws up --env dev --infra docker
+
+docker login registry.hf.space
+docker run -it -p 7860:7860 --platform=linux/amd64 \
+	-e HF_TOKEN="YOUR_VALUE_HERE" \
+	registry.hf.space/basheuvel-aeon:cpu-31aab9c 
