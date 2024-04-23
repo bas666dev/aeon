@@ -18,3 +18,7 @@ def agent_logic(agent, environment, other_agents):
         other_agent['knowledge'][action] = update_knowledge(other_agent['knowledge'][action], outcome)
 
     return action
+def update_knowledge(current_value, outcome):
+  learning_rate = 0.2  # Hyperparameter
+  new_value = current_value + learning_rate * (outcome - current_value) 
+  return new_value
