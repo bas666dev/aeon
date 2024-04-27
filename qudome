@@ -1,0 +1,53 @@
+import numpy as np
+from qiskit import QuantumCircuit, execute, Aer
+
+# Define the hemisphere shape
+def hemisphere_shape(theta, phi):
+    x = np.sin(theta) * np.cos(phi)
+    y = np.sin(theta) * np.sin(phi)
+    z = np.cos(theta)
+    return x, y, z
+
+# Define the deformation function
+def deformation(theta, phi, alpha):
+    x, y, z = hemisphere_shape(theta, phi)
+    x += alpha * np.sin(2 * theta) * np.cos(2 * phi)
+    y += alpha * np.sin(2 * theta) * np.sin(2 * phi)
+    z += alpha * np.cos(2 * theta)
+    return x, y, z
+
+# Create a quantum circuit with one qubit
+qc = QuantumCircuit(1)
+
+# Define the initial state (|0+ |1)/√2
+qc.h(0)
+
+# Apply a series of deformations to the hemisphere shape
+alphas = [0.1, 0.2, 0.3, 0.4, 0.5]
+for alpha in alphas:
+    # Deform the hemisphere shape
+    def_deformation = deformation(np.pi/2, np.pi/2, alpha)
+    # Apply a rotation gate to the qubit based on the deformation
+    qc.rx(def_deformation[0], 0)
+    qc.ry(def_deformation[1], 0)
+    qc.rz(def_deformation[2], 0)
+
+# Measure the qubit
+qc.measure(0, 0)
+
+# Execute the circuit on a simulator
+simulator = Aer.get_backend('statevector_simulator')
+job = execute(qc, simulator)
+result = job.result()
+statevector = result.get_statevector()
+
+# Analyze the statevector
+print("Statevector:")
+print(statevector)
+
+# Calculate the expectation values of Pauli operators
+expectation_values = []
+for pauli_op in ['X', 'Y', 'Z']:
+    expectation_values.append(np.real(np.trace(statevector @ pauli_op @ statevector.conj().T)))
+print("Expectation values:")
+print(expectation_values)
