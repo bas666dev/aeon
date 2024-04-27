@@ -1,0 +1,54 @@
+import numpy as np
+from qiskit import QuantumCircuit, execute, Aer
+
+# Define the hemisphere shape for multiple qubits
+def hemisphere_shape(theta, phi, num_qubits):
+    x = np.sin(theta) * np.cos(phi)
+    y = np.sin(theta) * np.sin(phi)
+    z = np.cos(theta)
+    return [x] * num_qubits, [y] * num_qubits, [z] * num_qubits
+
+# Define the deformation function for multiple qubits
+def deformation(theta, phi, alpha, num_qubits):
+    x, y, z = hemisphere_shape(theta, phi, num_qubits)
+    x = [xi + alpha * np.sin(2 * theta) * np.cos(2 * phi) for xi in x]
+    y = [yi + alpha * np.sin(2 * theta) * np.sin(2 * phi) for yi in y]
+    z = [zi + alpha * np.cos(2 * theta) for zi in z]
+    return x, y, z
+
+# Create a quantum circuit with 10 qubits
+num_qubits = 10
+qc = QuantumCircuit(num_qubits)
+
+# Apply Hadamard gates to all qubits for the initial state (|0> + |1>)/sqrt(2)
+qc.h(range(num_qubits))
+
+# Apply a series of deformations to the hemisphere shape for each qubit
+alphas = [0.1, 0.2, 0.3, 0.4, 0.5]
+for alpha in alphas:
+    for qubit in range(num_qubits):
+        # Deform the hemisphere shape for each qubit
+        def_deformation = deformation(np.pi/2, np.pi/2, alpha, num_qubits)
+        # Apply rotation gates to each qubit based on the deformation
+        qc.rx(def_deformation[0][qubit], qubit)
+        qc.ry(def_deformation[1][qubit], qubit)
+        qc.rz(def_deformation[2][qubit], qubit)
+
+# Measure all qubits
+qc.measure_all()
+
+# Execute the circuit on a simulator
+simulator = Aer.get_backend('statevector_simulator')
+job = execute(qc, simulator)
+result = job.result()
+statevector = result.get_statevector()
+
+# Calculate the expectation values of Pauli operators for each qubit
+expectation_values = {f'Qubit {qubit}': {'X': [], 'Y': [], 'Z': []} for qubit in range(num_qubits)}
+for qubit in range(num_qubits):
+    for pauli_op in ['X', 'Y', 'Z']:
+        expectation_values[f'Qubit {qubit}'][pauli_op] = np.real(
+            np.trace(statevector @ np.kron(np.eye(2**qubit), np.kron(eval(f'np.{pauli_op}'), np.eye(2**(num_qubits-qubit-1)))) @ statevector.conj().T)
+        )
+print("Expectation values:")
+print(expectation_values)
